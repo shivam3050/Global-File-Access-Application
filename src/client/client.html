@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    body {
+      color: white;
+      background-color: #2c2b4d;
+      padding-inline: clamp(10px,5vw,200px);
+      padding-block: clamp(10px,3vh,20px);
+      min-height: 720px;
+
+    }
+    #log {
+      overflow-y: auto;
+      font-size: clamp(15px,5vw,20px);
+    }
+
+    .threeDdiv{
+      background-color: #2c2b4d;
+      padding: clamp(20px,5vw,50px);
+      box-shadow: 10px 10px 20px 5px #141322,-5px -5px 20px 5px #403f71;
+      border-radius: 10px;
+      box-sizing: border-box;
+      margin: clamp(8px,5vw,40px);
+
+    }
+    .middle{
+
+      display: flex;
+      /* max-width: 100%; */
+      justify-content: space-between;
+      /* flex-wrap: wrap; */
+      flex-direction: column;
+      /* width: max-content; */
+
+    }
+    .circularbtn{
+      background-color: #2c2b4d;
+      padding: clamp(5px,2vw,10px);
+      box-shadow: 10px 10px 20px 1px #141322,-5px -5px 20px 4px #403f71;
+      border-radius: clamp(50%,50%,50%);
+      box-sizing: border-box;
+      width: clamp(100px,5vw,200px);
+      height: clamp(100px,5vw,200px);
+      color: #ccc;
+      border: none;
+      font-size: clamp(15px,5vw,20px);
+      
+
+    }
+    .circularbtn:active {
+      transform: scale(0.97);
+      box-shadow: 10.53px 10.53px 21.05px 1.05px #141322,
+    -5.26px -5.26px 21.05px 4.21px #403f71;
+
+    }
+    .circularbtn:focus{
+      outline: none;
+    }
+    .progress-bar {
+      border-radius: 2px;
+      height:clamp(30px,2vw,40px);
+      background-color: #ccc;
+      border: 0.1px solid black;
+      position: relative;
+      overflow: hidden;
+      background-color: #2c2b4d;
+      box-shadow: 10px 10px 20px 5px #141322,-5px -5px 20px 5px #403f71;
+      border-radius: 10px;
+      box-sizing: border-box;
+      color: #ccc;
+      margin-block: clamp(20px,2vw,30px);
+    }
+
+    .progress-bar #uploadProgressPercent {
+      border-radius: 2px;
+      border: none;
+      height: 100%;
+      width: 0%;
+      background-color: #4e4db5;
+      transition: width 0.4s ease-in;
+      text-align: right;
+    }
+
+  </style>
+</head>
+<body>
+  <div>
+    <h1 >File Sending + Recieving</h1>
+    <p style="color: white;">You are now connected...</p>
+  </div>
+  
+  <div class="middle threeDdiv" style="margin: 0px; margin-block-start: 3vw;margin-block-end: 3vw;">
+    <div class="threeDdiv">
+        <p>Use the file input below to send file:</p>
+
+        <input class=""  type="file" id="fileInput" multiple />
+        <p>
+          SendStatus: <span id="status"></span>
+        </p>
+        
+        <button class="circularbtn" onclick="post()">Send selected files</button>
+        <div class="progress-bar" >
+            <div id="uploadProgressPercent"></div>
+        </div>
+  
+    </div>
+    <div class="threeDdiv">
+      <p>Click on get below to recieve the files quickly:</p>
+      <button class="circularbtn" onclick="get()">Download files</button>
+    </div>
+  </div>
+
+
+  
+    <div id="log" class="">
+      <strong>Log:</strong>
+      <ul id="logList"></ul>
+    </div>
+    
+  
+ 
+  
+
+  <script>
+    const host = "__HOST__";
+    const port = "__PORT__";
+    const logList = document.getElementById('logList');
+    
+    function logMessage(message) {
+      const li = document.createElement('li');
+      li.textContent = message;
+      logList.appendChild(li);
+    }
+    let client=null;
+    async function get() {
+      const response = await fetch(`http://${host}:${port}/get/isready`)
+      if(response.status==200){
+        const theFileNames = await response.json()
+        logMessage(theFileNames)
+        for(const element of theFileNames) {
+          const a = document.createElement("a")
+          a.href=`http://${host}:${port}/get/${encodeURIComponent(element)}`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        logMessage("Files are available to download")
+      } else {
+        logMessage("Files are not available to download")
+      }
+      
+
+
+    }
+
+
+
+
+
+    const uploadProgressPercent = document.getElementById("uploadProgressPercent")
+    
+    const filePicker = document.getElementById("fileInput");
+    filePicker.addEventListener("change",(event)=>{
+      uploadProgressPercent.style.width="0%";
+      uploadProgressPercent.textContent="";
+      status.textContent="";
+    })
+
+    async function post(){
+
+      const status = document.getElementById("status")
+      const serverAcceptanceFlag = await fetch(`http://${host}:${port}/post/isready`,{
+        method:"GET"
+      })
+      if(serverAcceptanceFlag.status===200){
+        // logMessage("accepted")
+        const files = filePicker.files;
+        if(!files.length){
+          logMessage("Select file first")
+          return
+        }
+        const formdata = new FormData();
+        // logMessage("new formdata ka type hai :",typeof(formdata))
+        for(let i=0;i<files.length;i++){
+          formdata.append("files",files[i])
+        }
+        
+        const xhr = new XMLHttpRequest()
+        xhr.onload = ()=>{
+          if(xhr.status===200){
+            uploadProgressPercent.style.width="100%"
+            uploadProgressPercent.textContent="100%"
+            status.style.color="green"
+            status.style.fontWeight="800";
+            status.textContent = 'Sent Finished Successfully.'
+            logMessage("successfully sent all")
+          } else {
+            uploadProgressPercent.style.width="0%"
+            status.style.fontWeight="800";
+            status.textContent="Not sent";
+            status.style.color="red"
+            logMessage("not sent the files")
+          }
+        }
+        xhr.upload.onprogress = (event)=>{
+          if(event.lengthComputable){
+            const progressPercent = ((event.loaded * 100)/(event.total)).toFixed(2)
+            uploadProgressPercent.style.width=`${progressPercent}%`
+            uploadProgressPercent.textContent=`${progressPercent}%`
+          }
+        }
+        xhr.onerror = () => {
+          status.textContent = 'Error during upload.';
+          uploadProgressPercent.style.width="0%"
+          status.textContent="Err not sent";
+          status.style.color="red"
+          status.style.fontWeight="800";
+          logMessage("error occured in sending files")
+        };
+
+        xhr.open("POST",`http://${host}:${port}/post/`);
+        xhr.send(formdata)
+ 
+      } else if(serverAcceptanceFlag.status===501) {
+        const msg = await serverAcceptanceFlag.text()
+        logMessage(msg)
+      }
+      
+      else {
+        logMessage("Server is not accepting the files")
+      }
+
+
+    }
+
+
+
+
+    
+  </script>
+</body>
+</html>

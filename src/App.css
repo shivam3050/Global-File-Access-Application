@@ -1,0 +1,18 @@
+
+
+
+
+.mainFrame {
+    background-color: #212121;
+} 
+
+
+
+* {
+  scrollbar-width: none;           /* Firefox */
+  -ms-overflow-style: none;        /* Internet Explorer 10+ */
+}
+
+*::-webkit-scrollbar {
+  display: none;                   /* Chrome, Safari, Edge */
+}
